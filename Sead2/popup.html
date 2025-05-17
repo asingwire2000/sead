@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SEAD - Social Engineering Attack Detector</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>SEAD</h1>
+  <div id="settings">
+    <label>
+      <input type="checkbox" id="blockNavigation"> Block High-Risk Links
+    </label>
+  </div>
+  <div id="currentStatus">
+    <h2>Current Page</h2>
+    <p id="currentUrl">Loading...</p>
+    <div id="progressIndicator">
+      <span>Analysis Progress: <span id="progressValue">0%</span></span>
+      <div class="progress-bar">
+        <div id="progressBar"></div>
+      </div>
+      <button id="cancelAnalysis" style="display: none;">Cancel Analysis</button>
+    </div>
+    <p id="riskState">Risk: Loading...</p>
+    <div id="vulnerabilityScore">
+      <span>Vulnerability Score: <span id="scoreValue">Loading...</span></span>
+      <div class="progress-bar">
+        <div id="scoreBar"></div>
+      </div>
+      <p id="reportingSource">Primary Source: Loading...</p>
+    </div>
+    <p id="sources">Sources: Loading...</p>
+    <p id="impactMessage">Impact: Loading...</p>
+    <div id="errorLog">
+      <h3>Error Log</h3>
+      <ul id="errorList"></ul>
+    </div>
+    <button id="refreshAnalysis">Refresh Analysis</button>
+    <button id="reportPhishing">Report as Phishing</button>
+  </div>
+  <div id="history">
+    <h2>Visited Links History</h2>
+    <ul id="historyList"></ul>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
