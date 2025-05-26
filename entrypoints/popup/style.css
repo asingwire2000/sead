@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+:root {
+  --background: rgb(255, 255, 255);
+  --foreground: #171717;
+  --label: #1d1d1f;
+  --labelPrimary: rgba(0, 0, 0, 0.88);
+  --labelSecondary: rgba(0, 0, 0, 0.56);
+  --labelTertiary: rgba(0, 0, 0, 0.48);
+  --labelQuaternary: rgba(0, 0, 0, 0.32);
+  --fillPrimary: rgba(120, 120, 128, 0.2);
+  --fillSecondary: rgba(120, 120, 128, 0.16);
+  --fillTertiary: rgba(118, 118, 128, 0.12);
+  --fillQuaternary: rgba(120, 120, 128, 0.08);
+  --gray1: hsl(240, 2.3%, 56.7%);
+  --gray2: #aeaeb2;
+  --gray3: hsl(240, 4.7%, 79.0%);
+  --gray4: hsl(240, 5.7%, 82.9%);
+  --gray5: hsl(240, 10.6%, 90.8%);
+  --gray6: #f2f2f7;
+  --systemPink: #ff2d55;
+  --systemRed: hsl(0, 100.0%, 44.5%);
+  --systemOrange: #ff9500;
+  --systemYellow: #fc0;
+  --systemGreen: #03a10e;
+  --systemMint: #00c7be;
+  --systemTeal: #30b0c7;
+  --systemCyan: #32ade6;
+  --systemBlue: #0071e3;
+  --systemIndio: #5856d6;
+  --systemPurple: #af52de;
+  --systemBrown: #a2845e;
+  --systemBlack: #000;
+  --systemWhite: hsl(0, 0.0%, 100.0%);
+  --tintNotes: #ebb800;
+  --tintFindMy: #03a10e;
+  --tintCyan: rgba(50, 173, 230, 0.1);
+  --tintCyanOpaque: #eaf7fc;
+  --tintBlue: rgba(0, 113, 227, 0.7);
+  --tintBlueOpaque: #4b9beb;
+  --tintRed: rgba(227, 0, 0, 0.32);
+  --tintRedOpaque: #f6adad;
+  --tintBlueSecondary: rgba(0, 113, 227, 0.28);
+  --tintBlueSecondaryOpaque: #b8d7f7;
+  --tintBlueTertiary: rgba(0, 113, 227, 0.12);
+  --tintBlueTertiaryOpaque: #e1eefc;
+  --backgroundPrimary: hsl(0, 0.0%, 100.0%);
+  --backgroundLayer1: #f2f2f7;
+  --backgroundLayer2: #fff;
+  --boxShadow: rgba(0, 0, 0, 0.16);
+  --focusRing: rgba(0, 113, 227, 0.7);
+  --backdrop: rgba(245, 245, 247, 0.85);
+  --sidebar: #fbfbfd;
+  --divider: #d1d1d6;
+  --separator: #d1d1d6;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --font-sans: sansf, sans-serif;
+  --font-serif: tesla;
+
+  --color-systemGreen: var(--systemGreen);
+  --color-systemOrange: var(--systemOrange);
+  --color-systemYellow: var(--systemYellow);
+  --color-systemRed: var(--systemRed);
+  --color-systemBlue: var(--systemBlue);
+  --color-systemPink: var(--systemPink)
+
+  --color-label: var(--label);
+  --color-labelPrimary: var(--labelPrimary);
+  --color-labelSecondary: var(--labelSecondary);
+  --color-labelTertiary: var(--labelTertiary);
+  --color-labelQuaternary: var(--labelQuaternary);
+
+  --color-fillPrimary: var(--fillPrimary);
+  --color-fillSecondary: var(--fillSecondary);
+  --color-fillTertiary: var(--fillTertiary);
+  --color-fillQuaternary: var(--fillQuaternary);
+
+  --color-gray1: var(--gray1);
+  --color-gray2: var(--gray2);
+  --color-gray3: var(--gray3);
+  --color-gray4: var(--gray4);
+  --color-gray5: var(--gray5);
+  --color-gray6: var(--gray6);
+
+  --color-backgroundPrimary: var(--backgroundPrimary);
+  --color-backgroundLayer1: var(--backgroundLayer1);
+  --color-backgroundLayer2: var(--backgroundLayer2);
+
+  --color-boxShadow: var(--boxShadow);
+  --color-backdrop: var(--backdrop);
+  --color-sidebar: var(--sidebar);
+  --color-divider: var(--divider);
+  --color-separator: var(--separator);
+
+  --color-tintCyan: var(--tintCyan);
+  --color-tintCyanOpaque: var(--tintCyanOpaque);
+  --color-tintBlue: var(--tintBlue);
+  --color-tintBlueOpaque: var(--tintBlueOpaque);
+  --color-tintRed: var(--tintRed);
+  --color-tintRedOpaque: var(--tintRedOpaque);
+  --color-tintBlueSecondary: var(--tintBlueSecondary);
+  --color-tintBlueSecondaryOpaque: var(--tintBlueSecondaryOpaque);
+  --color-tintBlueTertiary: var(--tintBlueTertiary);
+  --color-tintBlueTertiaryOpaque: var(--tintBlueTertiaryOpaque);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: rgb(28, 28, 30);
+    --foreground: rgb(255, 255, 255);
+  
+    --label: #f5f5f7;
+    --labelPrimary: hsla(0, 0%, 100%, 0.98);
+    --labelSecondary: hsla(0, 0%, 100%, 0.66);
+    --labelTertiary: hsla(0, 0%, 100%, 0.5);
+    --labelQuaternary: hsla(0, 0%, 100%, 0.42);
+    --fillPrimary: hsla(0, 0%, 71.4%, 0.3);
+    --fillSecondary: rgba(120, 120, 128, 0.36);
+    --fillTertiary: rgba(118, 118, 128, 0.3);
+    --fillQuaternary: rgba(116, 116, 128, 0.25);
+    --gray1: hsl(240, 2.3%, 56.7%);
+    --gray2: #636366;
+    --gray3: hsl(240, 1.4%, 29.0%);
+    --gray4: hsl(240, 1.6%, 23.9%);
+    --gray5: hsl(240, 1.9%, 20.8%);
+    --gray6: #2c2c2e;
+    --systemPink: #ff375f;
+    --systemRed: hsl(358, 100.0%, 59.4%);
+    --systemOrange: #ff9f0a;
+    --systemYellow: #ffd60a;
+    --systemGreen: #32d158;
+    --systemMint: #63e6e2;
+    --systemTeal: #40c8e0;
+    --systemCyan: #64d2ff;
+    --systemBlue: #009aff;
+    --systemIndio: #5e5ce6;
+    --systemPurple: #bf5af2;
+    --systemBrown: #ac8e68;
+    --systemBlack: #fff;
+    --tintCyan: rgba(100, 210, 255, 0.14);
+    --tintCyanOpaque: #26353e;
+    --tintBlue: rgba(10, 132, 255, 0.7);
+    --tintBlueOpaque: #0f64bb;
+    --tintRed: #f40a0a7a;
+    --tintRedOpaque: #4e0303;
+    --tintBlueSecondary: rgba(10, 132, 255, 0.28);
+    --tintBlueSecondaryOpaque: #16395d;
+    --tintBlueTertiary: rgba(10, 132, 255, 0.12);
+    --tintBlueTertiaryOpaque: #1b2939;
+    --backgroundPrimary: hsl(240, 3.4%, 11.4%);
+    --backgroundLayer1: #323236;
+    --backgroundLayer2: #434349;
+    --boxShadow: rgba(0, 0, 0, 0.65);
+    --backdrop: rgba(10, 10, 10, 0.8);
+    --sidebar: #202023;
+    --divider: #000;
+    --separator: #343436;
+  }
+}
+
+@layer utilities {
+  .apple-intelligence-gradient {
+    background: linear-gradient(108deg, #0894FF 0%, #C959DD 34%, #FF2E54 68%, #FF9004 100%);
+  }
+  
+  .text-apple-intelligence-gradient {
+    background: linear-gradient(108deg, #0894FF 0%, #C959DD 34%, #FF2E54 68%, #FF9004 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
