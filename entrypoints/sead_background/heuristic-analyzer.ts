@@ -92,32 +92,28 @@ export class HeuristicAnalyzer {
       const parsedUrl = new URL(url);
       const originUrl = `${parsedUrl.protocol}//${parsedUrl.hostname}`;
 
-
-      console.log('getting headers')
       const response = await fetch(originUrl, {
         method: 'HEAD',
-        redirect: 'manual', // Don't follow redirects
-        cache: 'no-store'
+        redirect: 'manual',
+        cache: 'no-store',
+        mode: 'cors' // Might still block security headers
       });
 
-      console.log('res :' + response.headers.entries + response.status);
       const headers: Record<string, string> = {};
-      [
-        'strict-transport-security',
-        'x-frame-options',
-        'x-content-type-options',
-        'content-security-policy'
-      ].forEach(header => {
-        const value = response.headers.get(header);
-        if (value) headers[header] = value;
-      });
-      console.log('header :' + headers);
+      ['strict-transport-security', 'x-frame-options', 'x-content-type-options', 'content-security-policy']
+        .forEach(header => {
+          const value = response.headers.get(header);
+          if (value) headers[header] = value;
+        });
+
+      console.log('Collected headers (CORS-limited):', headers);
       return headers;
     } catch (error) {
       console.error('Failed to fetch headers:', error);
       return {};
     }
   }
+
 
   private static evaluateSecurityHeaders(headers: Record<string, string>): RiskState {
     const hasHSTS = !!headers['strict-transport-security'];

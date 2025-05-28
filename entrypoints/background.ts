@@ -92,6 +92,26 @@ function initializeBackground() {
     }
   };
 
+  browser.webRequest.onHeadersReceived.addListener(
+    function (details) {
+      const headers: Record<string, string> = {};
+
+      for (const h of details.responseHeaders || []) {
+        const name = h.name.toLowerCase();
+        if (['strict-transport-security', 'x-frame-options', 'x-content-type-options', 'content-security-policy'].includes(name)) {
+          headers[name] = h.value || '';
+        }
+      }
+
+      console.log(`🛡 Headers for ${details.url}:`, headers);
+
+      // Optionally send headers to content script or store them
+    },
+    { urls: ['<all_urls>'] },
+    ['responseHeaders']
+  );
+
+
   browser.runtime.onMessage.addListener(messageHandler);
   browser.tabs.onUpdated.addListener(handleTabUpdate);
   browser.webNavigation.onHistoryStateUpdated.addListener(handleHistoryStateUpdate);

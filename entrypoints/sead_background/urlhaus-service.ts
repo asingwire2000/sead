@@ -3,6 +3,7 @@ import { RiskState } from "./types";
 
 export class URLhausService extends ApiService {
   private static readonly API_URL = 'https://urlhaus-api.abuse.ch/v1/url/';
+  
 
   public async checkUrl(url: string): Promise<RiskState> {
     const cachedResult = await this.getCachedApiResponse(url, 'urlHaus');

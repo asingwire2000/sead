@@ -9,7 +9,7 @@ export default defineConfig({
 
   manifest: {
     name: 'SEAD',
-    permissions: ['storage', 'tabs', 'webNavigation', 'runtime'],
+    permissions: ['storage', 'tabs', 'webNavigation', "webRequest", 'webRequestBlocking', 'dns'],
     host_permissions: ['<all_urls>'],
   }
 });

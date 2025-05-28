@@ -1,6 +1,6 @@
 // types.ts
 export type RiskState = 'Phishing' | 'Suspicious' | 'Safe' | 'Unknown';
-export type ApiSource = 'phishTank' | 'googleSafeBrowsing' | 'openPhish' | 'urlHaus' | 'abuseIpDb' | 'ipReputation' | 'heuristic' | 'ssl';
+export type ApiSource = 'phishTank' | 'googleSafeBrowsing' | 'openPhish' | 'abuseIpDb' | 'ipReputation' | 'heuristic' | 'ssl'; //| 'urlHaus'
 
 export interface AnalysisResult {
   url: any;
