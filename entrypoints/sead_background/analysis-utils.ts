@@ -3,8 +3,6 @@ import { RiskState, ApiSource, AnalysisResult } from './types';
 export class AnalysisUtils {
   /**
    * Combines multiple risk states into a single overall state
-   * @param states Array of risk states to combine
-   * @returns Combined risk state
    */
   static combineRiskStates(states: RiskState[]): RiskState {
     if (states.includes('Phishing')) return 'Phishing';
@@ -15,29 +13,24 @@ export class AnalysisUtils {
 
   /**
    * Generates a human-readable impact message based on risk state
-   * @param state The risk state to generate message for
-   * @returns Appropriate impact message
    */
   static getImpactMessage(state: RiskState): string {
-    const messages = {
+    const messages: Record<RiskState, string> = {
       Phishing: '🚨 High risk: This appears to be a phishing site. Do not enter any personal information!',
       Suspicious: '⚠️ Caution: This site shows suspicious characteristics. Proceed with extreme caution.',
       Safe: '✅ Safe: This site appears legitimate. No significant risks detected.',
       Unknown: '❓ Unknown: Unable to determine the safety of this site. Exercise caution.'
     };
-    return messages[state] || messages.Unknown;
+    return messages[state] ?? messages.Unknown;
   }
 
   /**
-   * Calculates a vulnerability score based on results from all sources
-   * @param sources Record of all analysis sources and their results
-   * @returns Object containing score (0-100) and reporting source
+   * Calculates a vulnerability score from source analysis
    */
   static calculateVulnerabilityScore(
     sources: Record<ApiSource, RiskState>
   ): { score: number; reportingSource: string | null } {
-    // Weightings for each analysis source
-    const weights: Record<ApiSource, number> = {
+    const baseWeights: Record<ApiSource, number> = {
       phishTank: 0.20,
       googleSafeBrowsing: 0.20,
       openPhish: 0.15,
@@ -48,43 +41,44 @@ export class AnalysisUtils {
       ipReputation: 0.10
     };
 
-    // Points for each risk state
-    const stateValues: Record<RiskState, number> = {
+    const riskPoints: Record<RiskState, number> = {
       Phishing: 100,
       Suspicious: 50,
-      Safe: 0,
-      Unknown: 25
+      Unknown: 25,
+      Safe: 0
     };
 
+    // Identify the most severe source
     let maxSeveritySource: ApiSource | null = null;
     let maxSeverityValue = -1;
 
-    // Calculate weighted score and find the most severe reporting source
-    let weightedScore = 0;
     for (const [source, state] of Object.entries(sources) as [ApiSource, RiskState][]) {
-      const value = stateValues[state];
-      weightedScore += value * weights[source];
-
-      // Track the most severe source
+      const value = riskPoints[state];
       if (value > maxSeverityValue) {
         maxSeverityValue = value;
         maxSeveritySource = source;
       }
     }
 
-    // Adjust weights to emphasize the most severe finding
+    // Clone and adjust weights
+    const weights = { ...baseWeights };
     if (maxSeveritySource) {
       weights[maxSeveritySource] += 0.15;
-      // Normalize other weights
-      const otherSources = Object.keys(weights).filter(s => s !== maxSeveritySource) as ApiSource[];
-      for (const source of otherSources) {
-        weights[source] *= 0.85;
+
+      const remainingSources = Object.keys(weights).filter(s => s !== maxSeveritySource) as ApiSource[];
+      const scaleFactor = (1 - weights[maxSeveritySource]) / remainingSources.length;
+
+      for (const source of remainingSources) {
+        weights[source] = parseFloat((scaleFactor).toFixed(4));
       }
-      // Recalculate with adjusted weights
-      weightedScore = 0;
-      for (const [source, state] of Object.entries(sources) as [ApiSource, RiskState][]) {
-        weightedScore += stateValues[state] * weights[source];
-      }
+    }
+
+    // Compute weighted score
+    let weightedScore = 0;
+    for (const [source, state] of Object.entries(sources) as [ApiSource, RiskState][]) {
+      const value = riskPoints[state];
+      const weight = weights[source] ?? 0;
+      weightedScore += value * weight;
     }
 
     return {
@@ -94,45 +88,44 @@ export class AnalysisUtils {
   }
 
   /**
-   * Sets the browser action badge based on risk state
-   * @param state The current risk state
-   * @param tabId The tab ID to set the badge on
+   * Sets the browser badge based on risk state
    */
   static setBadge(state: RiskState, tabId: number): void {
-    const badgeConfig = {
-      Phishing: { text: 'PHISH', color: '#d32f2f' }, // Red
-      Suspicious: { text: 'WARN', color: '#ffa000' }, // Amber
-      Safe: { text: 'SAFE', color: '#388e3c' },      // Green
-      Unknown: { text: 'UNKN', color: '#616161' }    // Gray
+    const badgeConfig: Record<RiskState, { text: string; color: string }> = {
+      Phishing: { text: 'PHISH', color: '#d32f2f' },
+      Suspicious: { text: 'WARN', color: '#ffa000' },
+      Safe: { text: 'SAFE', color: '#388e3c' },
+      Unknown: { text: 'UNKN', color: '#616161' }
     };
 
-    const { text, color } = badgeConfig[state] || badgeConfig.Unknown;
-
+    const { text, color } = badgeConfig[state] ?? badgeConfig.Unknown;
     browser.action.setBadgeText({ text, tabId });
     browser.action.setBadgeBackgroundColor({ color, tabId });
   }
 
   /**
-   * Formats analysis results for display
-   * @param result The analysis results to format
-   * @returns Formatted string with all relevant information
+   * Formats the full analysis report for display
    */
   static formatResults(result: AnalysisResult): string {
-    let output = `Analysis Results for ${result.url}\n`;
-    output += `Final Verdict: ${result.state} (Score: ${result.vulnerabilityScore})\n`;
-    output += `Impact: ${this.getImpactMessage(result.state)}\n\n`;
-    output += 'Detailed Findings:\n';
+    const lines: string[] = [];
+
+    lines.push(`Analysis Results for ${result.url}`);
+    lines.push(`Final Verdict: ${result.state} (Score: ${result.vulnerabilityScore})`);
+    lines.push(`Impact: ${this.getImpactMessage(result.state)}\n`);
+    lines.push('Detailed Findings:');
 
     for (const [source, state] of Object.entries(result.sources)) {
-      output += `- ${source}: ${state}\n`;
+      lines.push(`- ${source}: ${state}`);
     }
 
     if (result.errors.length > 0) {
-      output += '\nErrors Encountered:\n';
-      result.errors.forEach(error => output += `- ${error}\n`);
+      lines.push('\nErrors Encountered:');
+      for (const error of result.errors) {
+        lines.push(`- ${error}`);
+      }
     }
 
-    output += `\nAnalysis completed in ${result.analysisTime.toFixed(2)}ms`;
-    return output;
+    lines.push(`\nAnalysis completed in ${result.analysisTime.toFixed(2)}ms`);
+    return lines.join('\n');
   }
 }

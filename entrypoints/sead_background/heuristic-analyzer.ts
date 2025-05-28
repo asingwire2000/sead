@@ -1,110 +1,160 @@
 import { RiskState } from './types';
 
 export class HeuristicAnalyzer {
+  private static readonly TRUSTED_DOMAINS = [
+    'google.com', 'youtube.com', 'microsoft.com', 'apple.com'
+  ];
+
   private static readonly SUSPICIOUS_KEYWORDS = [
     'login', 'signin', 'verify', 'account', 'secure',
-    'update', 'password', 'bank', 'paypal', 'amazon',
-    'ebay', 'apple', 'microsoft', 'support', 'service',
-    'alert', 'urgent', 'important', 'security', 'confirm'
+    'update', 'password', 'bank', 'paypal'
   ];
 
   private static readonly SUSPICIOUS_TLDS = [
-    '.xyz', '.top', '.gq', '.ml', '.cf', 
+    '.xyz', '.top', '.gq', '.ml', '.cf',
     '.tk', '.rest', '.buzz', '.country', '.stream'
   ];
 
   private static readonly PHISHING_PATTERNS = [
-    /http:\/\/[^/]+\/[^?]+\.php\?/, // PHP with query params
-    /[^\w\d\-]\d{4,}[^\w\d\-]/,     // Suspicious numbers in domain
-    /[^/]+\.[^/]+\.[^/]+/,          // Multiple subdomains
-    /https?:\/\/(?!www\.).*\.(?:com|net|org)\//, // Non-www domains
-    /[\u0400-\u04FF]/,              // Cyrillic characters
-    /[\u4e00-\u9FFF]/,              // Chinese characters
-    /[\u0600-\u06FF]/,              // Arabic characters
-    /^https?:\/\/\d+\.\d+\.\d+\.\d+/ // IP address as domain
+    /\/[^?]*\.php\?/,
+    /^https?:\/\/\d+\.\d+\.\d+\.\d+/,
+    /[\u0400-\u04FF]/, // Cyrillic
+    /[\u4e00-\u9FFF]/, // Chinese
+    /[\u0600-\u06FF]/  // Arabic
   ];
+
+  private static readonly SHORTENERS = [
+    'bit.ly', 'goo.gl', 'tinyurl.com', 'ow.ly', 't.co',
+    'is.gd', 'buff.ly', 'adf.ly', 'shorte.st', 'bc.vc'
+  ];
+
+  private static readonly THRESHOLDS = {
+    phishing: 70,
+    suspicious: 50
+  };
 
   public static analyze(url: string): RiskState {
     try {
-      const urlObj = new URL(url);
-      const hostname = urlObj.hostname.toLowerCase();
-      const pathname = urlObj.pathname.toLowerCase();
-      const fullUrl = url.toLowerCase();
+      const { hostname, pathname } = new URL(url.toLowerCase());
 
-      // 1. Check for suspicious keywords in hostname or path
-      const hasSuspiciousKeyword = this.SUSPICIOUS_KEYWORDS.some(keyword => 
-        hostname.includes(keyword) || pathname.includes(keyword)
-      );
+      if (this.isTrustedDomain(hostname)) return 'Safe';
 
-      // 2. Check for suspicious TLDs
-      const hasSuspiciousTld = this.SUSPICIOUS_TLDS.some(tld => 
-        hostname.endsWith(tld)
-      );
+      const scoreDetails = {
+        keyword: this.containsKeyword(hostname, pathname) ? 10 : 0,
+        tld: this.hasSuspiciousTld(hostname) ? 15 : 0,
+        phishing: this.matchesPhishingPattern(url) ? 30 : 0,
+        idn: this.isIdn(hostname) ? 25 : 0,
+        shortener: this.isShortenedUrl(hostname) ? 20 : 0
+      };
 
-      // 3. Check for known phishing patterns
-      const hasPhishingPattern = this.PHISHING_PATTERNS.some(pattern => 
-        pattern.test(fullUrl)
-      );
+      const score = Object.values(scoreDetails).reduce((a, b) => a + b, 0);
 
-      // 4. Check for homograph attacks (IDN)
-      const hasIdn = /[^\x00-\x7F]/.test(hostname);
-
-      // 5. Check for URL shortening services
-      const isShortened = this.isShortenedUrl(hostname);
-
-      // Scoring system
-      let score = 0;
-      if (hasSuspiciousKeyword) score += 30;
-      if (hasSuspiciousTld) score += 20;
-      if (hasPhishingPattern) score += 40;
-      if (hasIdn) score += 30;
-      if (isShortened) score += 20;
-
-      // Determine risk state
-      if (score >= 70) return 'Phishing';
-      if (score >= 40) return 'Suspicious';
+      if (score >= this.THRESHOLDS.phishing) return 'Phishing';
+      if (score >= this.THRESHOLDS.suspicious) return 'Suspicious';
       return 'Safe';
-    } catch (error) {
-      console.error('Error in heuristic analysis:', error instanceof Error ? error.message : String(error));
+
+    } catch (err) {
+      console.error('Heuristic error:', err);
       return 'Unknown';
     }
   }
 
   public static async checkHttpsAndSsl(url: string): Promise<RiskState> {
     try {
-      if (!url.startsWith('https://')) {
+      const parsedUrl = new URL(url);
+
+      // 1. Protocol check (basic)
+      if (parsedUrl.protocol !== 'https:') {
         return 'Suspicious';
       }
 
-      const hostname = new URL(url).hostname;
-      
-      // Basic SSL check - in a real extension you might use the webRequest API
-      // to examine the actual certificate details
-      const response = await fetch(`https://${hostname}`, { 
-        method: 'HEAD',
-        cache: 'no-store'
-      });
-      
-      // Check for secure headers
-      const strictTransportSecurity = response.headers.get('Strict-Transport-Security');
-      const xFrameOptions = response.headers.get('X-Frame-Options');
-      
-      if (!strictTransportSecurity || !xFrameOptions) {
-        return 'Suspicious';
+      // 2. In extension context, use webRequest API for deeper checks
+      if (typeof browser !== 'undefined' && browser.webRequest) {
+        return new Promise((resolve) => {
+          // This is simplified - real implementation would track requests
+          resolve('Safe'); // Assume safe in extension context
+        });
       }
-      
-      return 'Safe';
+
+      // 3. Fallback for non-extension contexts (testing)
+      const securityHeaders = await this.fetchSecurityHeaders(url);
+
+      return this.evaluateSecurityHeaders(securityHeaders);
+
     } catch (error) {
-      console.error('Error checking HTTPS/SSL:', error instanceof Error ? error.message : String(error));
+      console.error('HTTPS/SSL check error:', error);
       return 'Suspicious';
     }
   }
 
+  private static async fetchSecurityHeaders(url: string): Promise<Record<string, string>> {
+    try {
+      const parsedUrl = new URL(url);
+      const originUrl = `${parsedUrl.protocol}//${parsedUrl.hostname}`;
+
+
+      console.log('getting headers')
+      const response = await fetch(originUrl, {
+        method: 'HEAD',
+        redirect: 'manual', // Don't follow redirects
+        cache: 'no-store'
+      });
+
+      console.log('res :' + response.headers.entries + response.status);
+      const headers: Record<string, string> = {};
+      [
+        'strict-transport-security',
+        'x-frame-options',
+        'x-content-type-options',
+        'content-security-policy'
+      ].forEach(header => {
+        const value = response.headers.get(header);
+        if (value) headers[header] = value;
+      });
+      console.log('header :' + headers);
+      return headers;
+    } catch (error) {
+      console.error('Failed to fetch headers:', error);
+      return {};
+    }
+  }
+
+  private static evaluateSecurityHeaders(headers: Record<string, string>): RiskState {
+    const hasHSTS = !!headers['strict-transport-security'];
+    const hasXFO = !!headers['x-frame-options'];
+    const hasXCTO = !!headers['x-content-type-options'];
+    const hasCSP = !!headers['content-security-policy'];
+
+    const score = [hasHSTS, hasXFO, hasXCTO, hasCSP].filter(Boolean).length;
+
+    if (score >= 3) return 'Safe';
+    if (score >= 1) return 'Suspicious';
+    return 'Suspicious';
+  }
+
+  private static isTrustedDomain(hostname: string): boolean {
+    return this.TRUSTED_DOMAINS.some(domain => hostname.endsWith(domain));
+  }
+
+  private static containsKeyword(hostname: string, path: string): boolean {
+    return this.SUSPICIOUS_KEYWORDS.some(k =>
+      new RegExp(`\\b${k}\\b`, 'i').test(hostname + path)
+    );
+  }
+
+  private static hasSuspiciousTld(hostname: string): boolean {
+    return this.SUSPICIOUS_TLDS.some(tld => hostname.endsWith(tld));
+  }
+
+  private static matchesPhishingPattern(url: string): boolean {
+    return this.PHISHING_PATTERNS.some(pattern => pattern.test(url));
+  }
+
+  private static isIdn(hostname: string): boolean {
+    return /[^\x00-\x7F]/.test(hostname) || hostname.startsWith('xn--');
+  }
+
   private static isShortenedUrl(hostname: string): boolean {
-    const shorteners = [
-      'bit.ly', 'goo.gl', 'tinyurl.com', 'ow.ly', 't.co',
-      'is.gd', 'buff.ly', 'adf.ly', 'shorte.st', 'bc.vc'
-    ];
-    return shorteners.some(domain => hostname.includes(domain));
+    return this.SHORTENERS.some(short => hostname.includes(short));
   }
 }

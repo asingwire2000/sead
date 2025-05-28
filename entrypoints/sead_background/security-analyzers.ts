@@ -13,7 +13,7 @@ export class SecurityAnalyzer {
   private cancelanalysis: boolean = false;
   private readonly config: ApiConfig;
   private readonly phishTankService: PhishTankService;
- // private readonly googleSafeBrowsingService: GoogleSafeBrowsingService;
+  private readonly googleSafeBrowsingService: GoogleSafeBrowsingService;
   private readonly abuseIPDbService: AbuseIPDBService;
   private readonly openPhishService: OpenPhishService;
   private readonly urlHausService: URLhausService;
@@ -21,12 +21,12 @@ export class SecurityAnalyzer {
   constructor(config: ApiConfig) {
     this.config = config;
     this.phishTankService = new PhishTankService();
-   // this.googleSafeBrowsingService = new GoogleSafeBrowsingService(config.googleSafeBrowsingApiKey);
+    this.googleSafeBrowsingService = new GoogleSafeBrowsingService(config.googleSafeBrowsingApiKey);
     this.abuseIPDbService = new AbuseIPDBService(config.abuseIpdbApiKey);
     this.openPhishService = new OpenPhishService();
     this.urlHausService = new URLhausService();
   }
- 
+
 
   public async analyzeUrl(url: string, tabId: number): Promise<void> {
     try {
@@ -35,7 +35,7 @@ export class SecurityAnalyzer {
         return;
       }
 
-    
+
       this.cancelanalysis = false;
       console.log(`clearing Cache`);
       await StorageService.clearCacheForUrl(url);
@@ -118,8 +118,11 @@ export class SecurityAnalyzer {
     }
 
     try {
+      console.log('checking ssl')
       sources.ssl = await this.retryApiCall(() => HeuristicAnalyzer.checkHttpsAndSsl(url));
+      console.log('done resu;t s' + sources.ssl)
     } catch (err) {
+      console.log('checking ssl ee')
       errors.push(`HTTPS/SSL: ${err instanceof Error ? err.message : String(err)}`);
       sources.ssl = 'Suspicious';
     } finally {
@@ -168,7 +171,7 @@ export class SecurityAnalyzer {
   ): Promise<void> {
     const slowChecks: Promise<void>[] = [
       this.performCheck('phishTank', () => this.phishTankService.checkUrl(url), sources, errors, updateProgress),
-     // this.performCheck('googleSafeBrowsing', () => this.googleSafeBrowsingService.checkUrl(url), sources, errors, updateProgress),
+      this.performCheck('googleSafeBrowsing', () => this.googleSafeBrowsingService.checkUrl(url), sources, errors, updateProgress),
       this.performCheck('openPhish', () => this.openPhishService.checkUrl(url), sources, errors, updateProgress),
       //this.performCheck('urlHaus', () => this.urlHausService.checkUrl(url), sources, errors, updateProgress),
       this.performCheck('abuseIpDb', () => this.abuseIPDbService.checkUrl(url), sources, errors, updateProgress)
@@ -210,7 +213,7 @@ export class SecurityAnalyzer {
     errors: string[]
   ): Record<ApiSource, RiskState> {
     const apiSources: ApiSource[] = ['phishTank', 'googleSafeBrowsing', 'openPhish', 'urlHaus', 'abuseIpDb'];
-    
+
     if (apiSources.every(source => sources[source] === 'Unknown')) {
       errors.push('All API checks failed or were cancelled. Using heuristic and SSL checks only.');
       return {
@@ -287,7 +290,7 @@ export class SecurityAnalyzer {
       StorageService.saveToHistory({
         url,
         ...result
-      })  
+      })
     ]);
   }
 }

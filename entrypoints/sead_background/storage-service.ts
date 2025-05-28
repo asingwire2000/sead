@@ -1,5 +1,5 @@
 import { storage } from '#imports';
-import { RiskState, CacheEntry, LinkHistoryEntry } from './types';
+import { RiskState, CacheEntry, LinkHistoryEntry, AppSettings } from './types';
 
 
 export class StorageService {
@@ -7,6 +7,7 @@ export class StorageService {
     private static readonly LINK_HISTORY_KEY = 'local:linkHistory';
     private static readonly MAX_CACHE_ENTRIES = 100;
     private static readonly MAX_HISTORY_ENTRIES = 50;
+    private static readonly APP_SETTING_KEY = 'local:settings';
 
     /**
      * Clears the cache entry for a specific URL
@@ -114,6 +115,22 @@ export class StorageService {
     }
 
     /**
+     * Saves global app settings
+     * @param url The URL being analyzed
+     * @param entry The cache entry data (without timestamp)
+     */
+    static async saveSettings(settings: AppSettings): Promise<void> {
+        try {
+            await storage.setItem(this.APP_SETTING_KEY, settings);
+            console.log('Settings Stored successfully');
+        } catch (error) {
+            console.error('Error storing Settings:', error);
+            throw new Error('Failed failed to store settings');
+        }
+    }
+
+
+    /**
      * Retrieves the current URL cache
      */
     static async getUrlCache(): Promise<Record<string, CacheEntry>> {
@@ -122,6 +139,18 @@ export class StorageService {
         } catch (error) {
             console.error('Error retrieving URL cache:', error);
             throw new Error('Failed to retrieve URL cache');
+        }
+    }
+
+    /**
+   * Retrieves the current URL cache
+   */
+    static async getAppSetings(): Promise<Record<string, AppSettings>> {
+        try {
+            return await storage.getItem<Record<string, AppSettings>>(this.APP_SETTING_KEY) || {};
+        } catch (error) {
+            console.error('Error retrieving stored settings:', error);
+            throw new Error('Failed to retrieve storred settings');
         }
     }
 

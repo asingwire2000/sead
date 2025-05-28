@@ -56,3 +56,7 @@ export interface ApiConfig {
   abuseIpdbApiKey: string;
   phishStatsApiKey: string;
 }
+
+export interface AppSettings {
+  blockHighRiskLinks: boolean;
+}
