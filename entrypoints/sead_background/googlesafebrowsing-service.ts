@@ -72,4 +72,3 @@ export default class GoogleSafeBrowsingService extends ApiService {
     }
 }
 
-// Similar pattern for other services (OpenPhish, URLhaus, AbuseIPDB, VirusTotal)

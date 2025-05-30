@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import SettingsButton from './components/settings';
 import ProgressBar from './components/progressLoader';
-import { FolderClock, RefreshCcw } from 'lucide-react';
-import { processGraphData, RiskGraph } from './components/history-graph';
+import { Activity, FolderClock, MessageCircleWarning, RefreshCcw } from 'lucide-react';
+import { processGraphData, RiskGauge, RiskGraph } from './components/history-graph';
 
 type SourceStatus = 'Safe' | 'Suspicious' | 'Malicious' | string;
 
@@ -32,6 +32,8 @@ function App() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [blockHighRiskLinks, setBlockHighRiskLinks] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [showRefreshButton, setShowRefreshButton] = useState<boolean>(false);
 
   // Initialize settings and data
   useEffect(() => {
@@ -47,6 +49,7 @@ function App() {
           setHistory(linkHistory);
 
           const currentEntry = linkHistory.find((entry) => entry.url === url);
+          console.log(currentEntry)
 
           if (currentEntry) {
             setRiskState(currentEntry.state);
@@ -84,6 +87,7 @@ function App() {
         setIsLoading(true);
         setProgress(0);
         updateUI(true);
+        setShowRefreshButton(true);
       } else if (message.action === 'progressUpdate') {
         setProgress(message.progress);
       } else if (message.action === 'historyUpdated') {
@@ -91,18 +95,20 @@ function App() {
       }
     };
 
+
     browser.runtime.onMessage.addListener(handleMessage);
     return () => browser.runtime.onMessage.removeListener(handleMessage);
   }, []);
 
   const handleRefresh = () => {
+    setIsRefreshing(true);
     browser.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const url = tabs[0]?.url;
       if (!url) return;
 
-      setIsLoading(true);
+
       browser.runtime.sendMessage({ action: 'refreshAnalysis', url, tabId: tabs[0].id }, () => {
-        setIsLoading(false);
+        setIsRefreshing(false);
       });
     });
   };
@@ -125,20 +131,24 @@ function App() {
           <div className='flex items-center justify-between mb-3 w-full bg-backgroundLayer1 p-4 rounded'>
             <h1 className='text-3xl font-bold'>SEAD</h1>
             <div className='flex items-center gap-1 text-[10px]'>
-              <span title="Clear History">
+             
+
+              <span title="Analyze">
+                <div
+                  className='flex items-center space-x-1 cursor-pointer p-1 rounded-lg hover:bg-backgroundLayer2 text-systemGreen'
+                  onClick={handleRefresh}>
+                  <Activity />
+                </div>
+              </span>
+              
+               <span title="Clear History">
                 <div
                   className='flex items-center space-x-1 cursor-pointer p-1 rounded-lg hover:bg-backgroundLayer2 text-systemBlue'
                   onClick={handleRefresh}>
                   <FolderClock />
                 </div>
               </span>
-              <span title="Refresh Analysis">
-                <div
-                  className='flex items-center space-x-1 cursor-pointer p-1 rounded-lg hover:bg-backgroundLayer2 text-systemBlue'
-                  onClick={handleRefresh}>
-                  <RefreshCcw />
-                </div>
-              </span>
+
               <span title='Settings'>
                 <SettingsButton
                   blockHighRiskLinks={blockHighRiskLinks}
@@ -151,6 +161,23 @@ function App() {
             </div>
           </div>
 
+
+          {showRefreshButton && (<div className='w-full flex justify-start gap-6'>
+            <div
+              className='flex items-center space-x-1 cursor-pointer p-2 rounded-xl bg-backgroundLayer2 text-systemBlue hover:text-tintBlue hover:shadow-lg gap-2 shadow-lg text-[14px] mb-4'
+              onClick={handleRefresh}>
+              <div className={`${isRefreshing ? 'animate-spin' : ''}`}><RefreshCcw /></div>
+              Refresh Analysis
+            </div>
+            {riskState && riskState !== 'Safe' && (<div
+              className='flex items-center space-x-1 cursor-pointer p-2 rounded-xl bg-systemRed text-white hover:background-tintRed hover:shadow-lg gap-2 shadow-lg text-[14px] mb-4'
+              onClick={handleReportPhishing}>
+              <MessageCircleWarning />
+              Report URL
+            </div>)}
+          </div>)
+          }
+
           <div className='flex text-xl font-bold justify-start w-full mb-4'>{currentUrl}</div>
 
           <div className={`w-full h-[400px] overflow-y-auto pr-2 ${isLoading ? 'flex justify-center items-center' : ''}`}>
@@ -161,81 +188,85 @@ function App() {
                 <div>
 
                 </div>
-                <div className='border border-separator p-4 rounded-lg shadow-lg mb-4'>
-                  {riskState && (
-                    <>
-                      <div className='grid grid-cols-2 gap-2'>
-                        <div className='font-semibold'>Risk</div>
-                        <div>{riskState}</div>
-                      </div>
-                      <div className='my-2 h-px w-full bg-separator' />
-                    </>
-                  )}
+                <div className="flex gap-4">
+                  <div className='border border-separator p-4 rounded-lg shadow-lg mb-4 text-2l'>
+                    {riskState && (
+                      <>
+                        <div className='grid grid-cols-2 gap-2'>
+                          <div className='font-semibold'>Risk</div>
+                          <div>{riskState}</div>
+                        </div>
+                        <div className='my-2 h-px w-full bg-separator' />
+                      </>
+                    )}
+
+                    {scoreValue !== null && (
+                      <>
+                        <div className='grid grid-cols-2 gap-2'>
+                          <div className='font-semibold'>Score</div>
+                          <div>{scoreValue}%</div>
+                        </div>
+                        <div className='my-2 h-px w-full bg-separator' />
+                      </>
+                    )}
+
+                    {reportingSource && (
+                      <>
+                        <div className='grid grid-cols-2 gap-2'>
+                          <div className='font-semibold'>Primary Source</div>
+                          <div>{reportingSource}</div>
+                        </div>
+                        <div className='my-2 h-px w-full bg-separator' />
+                      </>
+                    )}
+
+                    <p className='mt-4'>{impactMessage}</p>
+                  </div>
 
                   {scoreValue !== null && (
-                    <>
-                      <div className='grid grid-cols-2 gap-2'>
-                        <div className='font-semibold'>Score</div>
-                        <div>{scoreValue}%</div>
-                      </div>
-                      <div className='my-2 h-px w-full bg-separator' />
-                    </>
+                    <RiskGauge score={scoreValue} />
                   )}
-
-                  {reportingSource && (
-                    <>
-                      <div className='grid grid-cols-2 gap-2'>
-                        <div className='font-semibold'>Primary Source</div>
-                        <div>{reportingSource}</div>
-                      </div>
-                      <div className='my-2 h-px w-full bg-separator' />
-                    </>
-                  )}
-
-                  <p className='mt-4'>{impactMessage}</p>
                 </div>
 
-                {!isLoading && history.length > 0 && (
-                  <RiskGraph data={processGraphData(history)} />
-                )}
 
 
-                <div className='w-full justify-start mb-4'>
+
+                <div className='w-full justify-start mb-4 mt-4'>
+                  <div className='mb-2 text-xl font-semibold'>Sources Results</div>
                   <ul>
-                    {history.map((entry, i) => {
-                     // console.log(entry)
-                      return (
-                        <li key={i}>
-                          <div className="overflow-x-auto">
-                            <table className="min-w-full text-sm text-left border border-separator rounded-lg shadow-lg p-4">
-                              <thead className="bg-backgrounLayer1 uppercase tracking-wide">
-                                <tr>
-                                  <th className="px-4 py-2">Source</th>
-                                  <th className="px-4 py-2">Status</th>
+                    {history.length > 0 && (
+                      <li>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full text-sm text-left border border-separator rounded-lg shadow-lg p-4">
+                            <thead className="bg-backgrounLayer1 uppercase tracking-wide">
+                              <tr>
+                                <th className="px-4 py-2">Source</th>
+                                <th className="px-4 py-2">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Object.entries(history[history.length - 1].sources).map(([source, status]) => (
+                                <tr key={source} className="border-t border-separator">
+                                  <td className="px-4 py-2 font-medium capitalize">{source}</td>
+                                  <td className="px-4 py-2">
+                                    <span className={`px-2 py-1 rounded-lg w-[100px] justify-center text-xs font-semibold 
+                ${status === 'Suspicious' ? 'text-systemYellow border border-systemYellow' :
+                                        status === 'Malicious' ? 'border border-systemRed text-systemRed' :
+                                          status === 'Safe' ? 'border border-systemGreen text-systemGreen' :
+                                            'border border-gray1 text-gray1'
+                                      }`}>
+                                      {status}
+                                    </span>
+                                  </td>
                                 </tr>
-                              </thead>
-                              <tbody>
-                                {Object.entries(entry.sources).map(([source, status]) => (
-                                  <tr key={source} className="border-t border-separator">
-                                    <td className="px-4 py-2 font-medium capitalize">{source}</td>
-                                    <td className="px-4 py-2">
-                                      <span className={`px-2 py-1 rounded-lg w-[100px] justify-center text-xs font-semibold 
-                                      ${status === 'Suspicious' ? 'text-systemYellow border border-systemYellow' :
-                                          status === 'Malicious' ? 'border border-systemRed text-systemRed' :
-                                            status === 'Safe' ? 'border border-systemGreen text-systemGreen' :
-                                              'border border-gray1 text-gray1'
-                                        }`}>
-                                        {status}
-                                      </span>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </li>
-                      );
-                    })}
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </li>
+
+                    )
+                    }
                   </ul>
                 </div>
               </div>
