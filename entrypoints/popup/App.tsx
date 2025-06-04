@@ -124,6 +124,19 @@ function App() {
     });
   };
 
+  const riskStateToGuageScore = (state: String) => {
+    switch (state) {
+      case 'Safe':
+        return 10;
+      case 'Suspicious':
+        return 50;
+      case 'Phishing':
+        return 95;
+      default:
+        return 0
+    }
+  }
+
   return (
     <div className='p-1'>
       <div className='flex items-center p-8 border border-separator rounded'>
@@ -131,17 +144,17 @@ function App() {
           <div className='flex items-center justify-between mb-3 w-full bg-backgroundLayer1 p-4 rounded'>
             <h1 className='text-3xl font-bold'>SEAD</h1>
             <div className='flex items-center gap-1 text-[10px]'>
-             
+
 
               <span title="Analyze">
                 <div
-                  className='flex items-center space-x-1 cursor-pointer p-1 rounded-lg hover:bg-backgroundLayer2 text-systemGreen'
+                  className='flex items-center space-x-1 cursor-pointer p-1 rounded-lg bg-[#36824347] text-systemGreen'
                   onClick={handleRefresh}>
                   <Activity />
                 </div>
               </span>
-              
-               <span title="Clear History">
+
+              <span title="Clear History">
                 <div
                   className='flex items-center space-x-1 cursor-pointer p-1 rounded-lg hover:bg-backgroundLayer2 text-systemBlue'
                   onClick={handleRefresh}>
@@ -204,7 +217,7 @@ function App() {
                       <>
                         <div className='grid grid-cols-2 gap-2'>
                           <div className='font-semibold'>Score</div>
-                          <div>{scoreValue}%</div>
+                          <div>{riskStateToGuageScore(riskState)}%</div>
                         </div>
                         <div className='my-2 h-px w-full bg-separator' />
                       </>
@@ -224,7 +237,7 @@ function App() {
                   </div>
 
                   {scoreValue !== null && (
-                    <RiskGauge score={scoreValue} />
+                    <RiskGauge score={riskStateToGuageScore(riskState)} />
                   )}
                 </div>
 
@@ -245,13 +258,13 @@ function App() {
                               </tr>
                             </thead>
                             <tbody>
-                              {Object.entries(history[history.length - 1].sources).map(([source, status]) => (
+                              {Object.entries(history[0].sources).map(([source, status]) => (
                                 <tr key={source} className="border-t border-separator">
                                   <td className="px-4 py-2 font-medium capitalize">{source}</td>
                                   <td className="px-4 py-2">
                                     <span className={`px-2 py-1 rounded-lg w-[100px] justify-center text-xs font-semibold 
                 ${status === 'Suspicious' ? 'text-systemYellow border border-systemYellow' :
-                                        status === 'Malicious' ? 'border border-systemRed text-systemRed' :
+                                        status === 'Malicious' || status === 'Phishing' ? 'border border-systemRed text-systemRed' :
                                           status === 'Safe' ? 'border border-systemGreen text-systemGreen' :
                                             'border border-gray1 text-gray1'
                                       }`}>

@@ -29,8 +29,8 @@ export class HeuristicAnalyzer {
   ];
 
   private static readonly THRESHOLDS = {
-    phishing: 70,
-    suspicious: 50
+    phishing: 60,
+    suspicious: 30
   };
 
   public static analyze(url: string): RiskState {
@@ -40,22 +40,24 @@ export class HeuristicAnalyzer {
       if (this.isTrustedDomain(hostname)) return 'Safe';
 
       const scoreDetails = {
-        keyword: this.containsKeyword(hostname, pathname) ? 10 : 0,
-        tld: this.hasSuspiciousTld(hostname) ? 15 : 0,
-        phishing: this.matchesPhishingPattern(url) ? 30 : 0,
-        idn: this.isIdn(hostname) ? 25 : 0,
-        shortener: this.isShortenedUrl(hostname) ? 20 : 0
+        keyword: this.containsKeyword(hostname, pathname) ? 15 : 0,
+        tld: this.hasSuspiciousTld(hostname) ? 10 : 0,
+        phishing: this.matchesPhishingPattern(url) ? 25 : 0,
+        idn: this.isIdn(hostname) ? 20 : 0,
+        shortener: this.isShortenedUrl(hostname) ? 15 : 0
       };
 
       const score = Object.values(scoreDetails).reduce((a, b) => a + b, 0);
+
+      console.debug(`Heuristic score breakdown for ${url}:`, scoreDetails, 'Total:', score);
 
       if (score >= this.THRESHOLDS.phishing) return 'Phishing';
       if (score >= this.THRESHOLDS.suspicious) return 'Suspicious';
       return 'Safe';
 
     } catch (err) {
-      console.error('Heuristic error:', err);
-      return 'Unknown';
+      console.error('Heuristic analysis error:', err);
+      return 'Suspicious'; // Safer fallback than 'Unknown'
     }
   }
 
@@ -63,22 +65,9 @@ export class HeuristicAnalyzer {
     try {
       const parsedUrl = new URL(url);
 
-      // 1. Protocol check (basic)
-      if (parsedUrl.protocol !== 'https:') {
-        return 'Suspicious';
-      }
+      if (parsedUrl.protocol !== 'https:') return 'Suspicious';
 
-      // 2. In extension context, use webRequest API for deeper checks
-      if (typeof browser !== 'undefined' && browser.webRequest) {
-        return new Promise((resolve) => {
-          // This is simplified - real implementation would track requests
-          resolve('Safe'); // Assume safe in extension context
-        });
-      }
-
-      // 3. Fallback for non-extension contexts (testing)
       const securityHeaders = await this.fetchSecurityHeaders(url);
-
       return this.evaluateSecurityHeaders(securityHeaders);
 
     } catch (error) {
@@ -96,7 +85,7 @@ export class HeuristicAnalyzer {
         method: 'HEAD',
         redirect: 'manual',
         cache: 'no-store',
-        mode: 'cors' // Might still block security headers
+        mode: 'cors'
       });
 
       const headers: Record<string, string> = {};
@@ -106,7 +95,6 @@ export class HeuristicAnalyzer {
           if (value) headers[header] = value;
         });
 
-      console.log('Collected headers (CORS-limited):', headers);
       return headers;
     } catch (error) {
       console.error('Failed to fetch headers:', error);
@@ -114,14 +102,13 @@ export class HeuristicAnalyzer {
     }
   }
 
-
   private static evaluateSecurityHeaders(headers: Record<string, string>): RiskState {
-    const hasHSTS = !!headers['strict-transport-security'];
-    const hasXFO = !!headers['x-frame-options'];
-    const hasXCTO = !!headers['x-content-type-options'];
-    const hasCSP = !!headers['content-security-policy'];
-
-    const score = [hasHSTS, hasXFO, hasXCTO, hasCSP].filter(Boolean).length;
+    const score = [
+      headers['strict-transport-security'],
+      headers['x-frame-options'],
+      headers['x-content-type-options'],
+      headers['content-security-policy']
+    ].filter(Boolean).length;
 
     if (score >= 3) return 'Safe';
     if (score >= 1) return 'Suspicious';

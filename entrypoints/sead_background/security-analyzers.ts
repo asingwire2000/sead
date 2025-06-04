@@ -9,6 +9,7 @@ import { HeuristicAnalyzer } from './heuristic-analyzer';
 import { AnalysisUtils } from './analysis-utils';
 import GoogleSafeBrowsingService from './googlesafebrowsing-service';
 import { IpReputationService } from './ipreputaion-service';
+import { CloudflareService } from './CloudflareService';
 
 export class SecurityAnalyzer {
   private cancelanalysis: boolean = false;
@@ -19,6 +20,7 @@ export class SecurityAnalyzer {
   private readonly openPhishService: OpenPhishService;
   private readonly urlHausService: URLhausService;
   private readonly ipReputationService: IpReputationService;
+  private readonly cloudFlareService: CloudflareService;
 
   constructor(config: ApiConfig) {
     this.config = config;
@@ -28,6 +30,7 @@ export class SecurityAnalyzer {
     this.openPhishService = new OpenPhishService();
     this.urlHausService = new URLhausService();
     this.ipReputationService = new IpReputationService(config.abuseIpdbApiKey);
+    this.cloudFlareService = new CloudflareService(config.cloudFlareApiKey);
   }
 
 
@@ -137,10 +140,10 @@ export class SecurityAnalyzer {
     return {
       heuristic: sources.heuristic || 'Unknown',
       ssl: sources.ssl || 'Unknown',
-      phishTank: 'Unknown',
+      //phishTank: 'Unknown',
       googleSafeBrowsing: 'Unknown',
       openPhish: 'Unknown',
-      // urlHaus: 'Unknown',
+      cloudFlare: 'Unknown',
       abuseIpDb: 'Unknown',
       ipReputation: 'Unknown'
     };
@@ -171,10 +174,10 @@ export class SecurityAnalyzer {
     startTime: number
   ): Promise<void> {
     const slowChecks: Promise<void>[] = [
-      this.performCheck('phishTank', () => this.phishTankService.checkUrl(url), sources, errors, updateProgress),
+      //this.performCheck('phishTank', () => this.phishTankService.checkUrl(url), sources, errors, updateProgress),
       this.performCheck('googleSafeBrowsing', () => this.googleSafeBrowsingService.checkUrl(url), sources, errors, updateProgress),
       this.performCheck('openPhish', () => this.openPhishService.checkUrl(url), sources, errors, updateProgress),
-      //this.performCheck('urlHaus', () => this.urlHausService.checkUrl(url), sources, errors, updateProgress),
+      this.performCheck('cloudFlare', () => this.cloudFlareService.checkUrl(url), sources, errors, updateProgress),
       this.performCheck('abuseIpDb', () => this.abuseIPDbService.checkUrl(url), sources, errors, updateProgress),
       this.performCheck('ipReputation', () => this.ipReputationService.checkUrl(url), sources, errors, updateProgress)
     ];
@@ -214,17 +217,17 @@ export class SecurityAnalyzer {
     sources: Partial<Record<ApiSource, RiskState>>,
     errors: string[]
   ): Record<ApiSource, RiskState> {
-    const apiSources: ApiSource[] = ['phishTank', 'googleSafeBrowsing', 'openPhish', 'abuseIpDb']; //'urlHaus',
+    const apiSources: ApiSource[] = ['googleSafeBrowsing', 'openPhish', 'abuseIpDb', 'cloudFlare']; //'urlHaus',//'phishTank',
 
     if (apiSources.every(source => sources[source] === 'Unknown')) {
       errors.push('All API checks failed or were cancelled. Using heuristic and SSL checks only.');
       return {
         heuristic: sources.heuristic || 'Unknown',
         ssl: sources.ssl || 'Unknown',
-        phishTank: 'Unknown',
+        // phishTank: 'Unknown',
         googleSafeBrowsing: 'Unknown',
         openPhish: 'Unknown',
-        // urlHaus: 'Unknown',
+        cloudFlare: 'Unknown',
         abuseIpDb: 'Unknown',
         ipReputation: 'Unknown'
       };
@@ -233,10 +236,10 @@ export class SecurityAnalyzer {
     return {
       heuristic: sources.heuristic || 'Unknown',
       ssl: sources.ssl || 'Unknown',
-      phishTank: sources.phishTank || 'Unknown',
+      // phishTank: sources.phishTank || 'Unknown',
       googleSafeBrowsing: sources.googleSafeBrowsing || 'Unknown',
       openPhish: sources.openPhish || 'Unknown',
-      //  urlHaus: sources.urlHaus || 'Unknown',
+      cloudFlare: sources.cloudFlare || 'Unknown',
       abuseIpDb: sources.abuseIpDb || 'Unknown',
       ipReputation: sources.ipReputation || 'Unknown'
     };

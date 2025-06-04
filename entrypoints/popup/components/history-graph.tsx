@@ -83,7 +83,7 @@ export const RiskGauge = ({ score }: { score: number }) => {
     const needleAngle = (score / 100) * 180 - 90;
 
     const gaugeData = [
-        { name: 'Safe', value: 60, color: '#10b981' },
+        { name: 'Safe', value: 30, color: '#10b981' },
         { name: 'Suspicious', value: 30, color: '#f59e0b' },
         { name: 'Danger', value: 30, color: '#ef4444' },
     ];

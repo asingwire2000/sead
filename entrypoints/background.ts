@@ -1,5 +1,6 @@
 import {
   ABUSEIPDB_API_KEY,
+  CLOUDFLARE_API_KEY,
   GOOGLE_SAFE_BROWSING_API_KEY,
   PHISHSTATS_API_KEY,
   VIRUSTOTAL_API_KEY,
@@ -17,6 +18,7 @@ function initializeBackground() {
     virusTotalApiKey: VIRUSTOTAL_API_KEY,
     abuseIpdbApiKey: ABUSEIPDB_API_KEY,
     phishStatsApiKey: PHISHSTATS_API_KEY,
+    cloudFlareApiKey: CLOUDFLARE_API_KEY,
   };
 
   const securityAnalyzer = new SecurityAnalyzer(apiConfig);

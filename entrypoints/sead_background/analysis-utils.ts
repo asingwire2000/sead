@@ -34,7 +34,7 @@ export class AnalysisUtils {
       phishTank: 0.20,
       googleSafeBrowsing: 0.20,
       openPhish: 0.15,
-      urlHaus: 0.15,
+    
       abuseIpDb: 0.10,
       heuristic: 0.10,
       ssl: 0.10,
